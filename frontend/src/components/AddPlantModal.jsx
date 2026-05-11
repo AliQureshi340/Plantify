@@ -99,7 +99,7 @@ const categories = ['outdoor', 'indoor', 'seeds', 'fertilizers', 'equipment', 'a
       // Get token from localStorage
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5002/api/plants', {
+      const response = await fetch('http://localhost:5000/api/plants', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

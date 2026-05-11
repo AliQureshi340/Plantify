@@ -4,7 +4,7 @@ import { User, Mail, Lock, Phone, MapPin, Upload, Eye, EyeOff, X, Send, Shield, 
 // ==================== AUTH CONTEXT ====================
 
 const AuthContext = createContext();
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5002';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 const authReducer = (state, action) => {
   switch (action.type) {

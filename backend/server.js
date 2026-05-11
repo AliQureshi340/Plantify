@@ -8,7 +8,9 @@ const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { spawn } = require('child_process');
 require('dotenv').config();
+const socialRouter = require('./social');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -29,16 +31,21 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.use('/images', express.static('uploads')); // Serve images at /images path
-
 // Create uploads directory if not exists
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-// MongoDB connection
+// Social Engagement API
+app.use('/api/social', socialRouter);
+
+// Mongooose schemema
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/plantify-backend', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+}).catch((error) => {
+  console.error('❌ Initial MongoDB connection failed:', error.message);
+  console.error('⚠️ Server will keep running, but DB-dependent routes may fail until MongoDB is available.');
 });
 
 const db = mongoose.connection;
@@ -70,119 +77,126 @@ db.once('open', async () => {
     if (drivesCount === 0) {
       const now = new Date();
       const addDays = (d) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
-      const sampleDrives = [
-        {
-          title: 'Capital Green Drive',
-          description: 'Join us to plant native trees across the capital city.',
-          date: addDays(7),
-          time: '09:00',
-          location: 'Islamabad',
-          capacity: 200,
-          maxParticipants: 200,
-          treesToPlant: 500,
-          requirements: 'Bring your own gloves and water bottle. We will provide tools and saplings.',
-          contactInfo: 'Call 0300-1234567 for more information',
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'Lahore Canal Plantation',
-          description: 'Beautifying the canal bank with shade trees.',
-          date: addDays(10),
-          time: '08:30',
-          location: 'Lahore',
-          capacity: 150,
-          maxParticipants: 150,
-          treesToPlant: 300,
-          requirements: 'Comfortable clothes and closed shoes. Tools provided.',
-          contactInfo: 'Email: lahore@plantify.com',
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'KPK Hills Reforestation',
-          description: 'Reforesting hills with resilient local species.',
-          date: addDays(14),
-          location: 'KPK',
-          capacity: 300,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        // Additional upcoming
-        {
-          title: 'Islamabad Parkside Trees',
-          description: 'Planting along park pathways and picnic spots.',
-          date: addDays(3),
-          location: 'Islamabad',
-          capacity: 120,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'Lahore University Green Day',
-          description: 'Student-led planting on campus grounds.',
-          date: addDays(5),
-          location: 'Lahore',
-          capacity: 180,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'KPK Riverbank Restoration',
-          description: 'Stabilizing riverbanks with native saplings.',
-          date: addDays(9),
-          location: 'KPK',
-          capacity: 220,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        // Past drives
-        {
-          title: 'Islamabad Spring Drive',
-          description: 'Community spring planting event completed.',
-          date: addDays(-20),
-          location: 'Islamabad',
-          capacity: 200,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'Lahore Mall Road Shade',
-          description: 'Added shade trees along main boulevard.',
-          date: addDays(-12),
-          location: 'Lahore',
-          capacity: 160,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          title: 'KPK Community Orchard',
-          description: 'Fruit-bearing trees planted with volunteers.',
-          date: addDays(-8),
-          location: 'KPK',
-          capacity: 140,
-          isPublic: true,
-          status: 'approved',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
+     const sampleDrives = [
+  {
+    title: 'Capital Green Drive',
+    description: 'Join us to plant native trees across the capital city.',
+    date: addDays(7),
+    time: '09:00',
+    location: 'Islamabad',
+    coordinates: { lat: 33.6844, lng: 73.0479 }, // ADD THIS
+    capacity: 200,
+    maxParticipants: 200,
+    treesToPlant: 500,
+    requirements: 'Bring your own gloves and water bottle. We will provide tools and saplings.',
+    contactInfo: 'Call 0300-1234567 for more information',
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'Lahore Canal Plantation',
+    description: 'Beautifying the canal bank with shade trees.',
+    date: addDays(10),
+    time: '08:30',
+    location: 'Lahore',
+    coordinates: { lat: 31.5497, lng: 74.3436 }, // ADD THIS
+    capacity: 150,
+    maxParticipants: 150,
+    treesToPlant: 300,
+    requirements: 'Comfortable clothes and closed shoes. Tools provided.',
+    contactInfo: 'Email: lahore@plantify.com',
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'KPK Hills Reforestation',
+    description: 'Reforesting hills with resilient local species.',
+    date: addDays(14),
+    location: 'KPK',
+    coordinates: { lat: 34.0151, lng: 71.5249 }, // ADD THIS
+    capacity: 300,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'Islamabad Parkside Trees',
+    description: 'Planting along park pathways and picnic spots.',
+    date: addDays(3),
+    location: 'Islamabad',
+    coordinates: { lat: 33.7077, lng: 73.0442 }, // ADD THIS
+    capacity: 120,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'Lahore University Green Day',
+    description: 'Student-led planting on campus grounds.',
+    date: addDays(5),
+    location: 'Lahore',
+    coordinates: { lat: 31.4504, lng: 74.2676 }, // ADD THIS
+    capacity: 180,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'KPK Riverbank Restoration',
+    description: 'Stabilizing riverbanks with native saplings.',
+    date: addDays(9),
+    location: 'KPK',
+    coordinates: { lat: 34.1688, lng: 72.2229 }, // ADD THIS
+    capacity: 220,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'Islamabad Spring Drive',
+    description: 'Community spring planting event completed.',
+    date: addDays(-20),
+    location: 'Islamabad',
+    coordinates: { lat: 33.6516, lng: 73.1602 }, // ADD THIS
+    capacity: 200,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'Lahore Mall Road Shade',
+    description: 'Added shade trees along main boulevard.',
+    date: addDays(-12),
+    location: 'Lahore',
+    coordinates: { lat: 31.5656, lng: 74.3242 }, // ADD THIS
+    capacity: 160,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    title: 'KPK Community Orchard',
+    description: 'Fruit-bearing trees planted with volunteers.',
+    date: addDays(-8),
+    location: 'KPK',
+    coordinates: { lat: 34.0151, lng: 71.5797 }, // ADD THIS
+    capacity: 140,
+    isPublic: true,
+    status: 'approved',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
       await mongoose.connection.db.collection('drives').insertMany(sampleDrives);
       console.log('🌳 Seeded sample plantation drives');
     }
@@ -221,25 +235,86 @@ const upload = multer({
   }
 });
 
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const runPlantDiseaseInference = (imagePath) => {
+  return new Promise((resolve, reject) => {
+    const pythonExecutable = process.env.PYTHON_EXECUTABLE || 'python';
+    const scriptPath = path.join(__dirname, 'utils', 'plant_disease_inference.py');
+    const modelPath = path.join(__dirname, 'models', 'plant_disease_model_v3.keras');
+    const labelsPath = path.join(__dirname, 'models', 'plant_disease_labels.json');
+    const hasLabelsFile = fs.existsSync(labelsPath);
+
+    const args = [
+      scriptPath,
+      '--model',
+      modelPath,
+      '--image',
+      imagePath
+    ];
+
+    if (hasLabelsFile) {
+      args.push('--labels', labelsPath);
+    }
+
+    const pythonProcess = spawn(pythonExecutable, args, { cwd: __dirname });
+    let stdout = '';
+    let stderr = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    pythonProcess.on('error', (error) => {
+      reject(new Error(`Failed to start Python process: ${error.message}`));
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(stderr || stdout || `Inference process failed with exit code ${code}`));
+      }
+
+      try {
+        const parsedOutput = JSON.parse(stdout.trim());
+        if (!parsedOutput.success) {
+          return reject(new Error(parsedOutput.error || 'Inference failed'));
+        }
+        resolve(parsedOutput);
+      } catch (parseError) {
+        reject(new Error(`Invalid inference response: ${parseError.message}`));
+      }
+    });
+  });
+};
+
+// transporter function email otp
+const hasEmailConfig = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const transporter = hasEmailConfig
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    })
+  : null;
 
 // Test email configuration on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email configuration error:', error.message);
-    console.log('📧 Please check your EMAIL_USER and EMAIL_PASS in .env file');
-  } else {
-    console.log('✅ Email server is ready to send messages');
-  }
-});
+if (transporter) {
+  transporter.verify((error) => {
+    if (error) {
+      console.error('❌ Email configuration error:', error.message);
+      console.log('📧 Please check your EMAIL_USER and EMAIL_PASS in .env file');
+    } else {
+      console.log('✅ Email server is ready to send messages');
+    }
+  });
+} else {
+  console.warn('⚠️ Email service not configured. OTP emails are disabled until EMAIL_USER and EMAIL_PASS are set.');
+}
 
 // ==================== DATABASE SCHEMAS ====================
 
@@ -340,10 +415,10 @@ const orderSchema = new mongoose.Schema({
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, min: 0 }
   }],
-  total: { type: Number, required: true, min: 0 },
+total: { type: Number, required: true, min: 0 },
   status: { 
     type: String, 
-    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], 
+    enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending' 
   },
   deliveryType: { 
@@ -395,6 +470,10 @@ const driveSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   time: { type: String, trim: true },
   location: { type: String, required: true, trim: true },
+  coordinates: {
+    lat: { type: Number, default: 33.6844 },
+    lng: { type: Number, default: 73.0479 }
+  },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   capacity: { type: Number, default: 100, min: 1 },
   maxParticipants: { type: Number, default: 100, min: 1 },
@@ -402,12 +481,14 @@ const driveSchema = new mongoose.Schema({
   requirements: { type: String, trim: true },
   contactInfo: { type: String, trim: true },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  waitlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isPublic: { type: Boolean, default: true },
   status: { 
-    type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
-    default: 'approved' 
-  },
+  type: String, 
+
+enum: ['upcoming', 'ongoing', 'completed', 'cancelled', 'pending', 'approved', 'rejected'],
+  default: 'pending' 
+},
   rejectionReason: { type: String, trim: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
@@ -418,7 +499,7 @@ driveSchema.virtual('spotsLeft').get(function() {
 const Drive = mongoose.model('Drive', driveSchema);
 
 // ==================== AUTHENTICATION MIDDLEWARE ====================
-
+//json web token expire
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -472,6 +553,12 @@ const requireRole = (roles) => {
 // Send OTP Route
 app.post('/api/auth/send-otp', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'Database is unavailable. Please start MongoDB and try again.'
+      });
+    }
+
     const { email, role } = req.body;
 
     if (!email || !role) {
@@ -532,15 +619,23 @@ app.post('/api/auth/send-otp', async (req, res) => {
       };
 
       await transporter.sendMail(mailOptions);
+    } else if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({
+        error: 'Email service is not configured. Please contact support.'
+      });
     }
     
     console.log(`📧 OTP sent to ${email} for ${role} role: ${otp}`);
     
+    const isDevLike = process.env.NODE_ENV !== 'production';
     res.json({ 
       success: true,
-      message: 'OTP sent successfully to your email',
+      message: transporter
+        ? 'OTP sent successfully to your email'
+        : 'OTP generated successfully. Email service is disabled in local mode; use server logs.',
       email: email.replace(/(.{2}).*(@.*)/, '$1***$2'),
-      expiresIn: 300
+      expiresIn: 300,
+      ...(isDevLike && !transporter ? { devOtp: otp } : {})
     });
 
   } catch (error) {
@@ -837,13 +932,43 @@ app.get('/api/store/categories', (req, res) => {
   res.json(allCategories);
 });
 
+app.post('/api/plant-detection/predict', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: 'Please upload an image.' });
+  }
+
+  const imagePath = path.join(__dirname, req.file.path);
+  try {
+    if (!fs.existsSync(path.join(__dirname, 'models', 'plant_disease_model_v3.keras'))) {
+      return res.status(500).json({
+        success: false,
+        error: 'Plant disease model file was not found in backend/models.'
+      });
+    }
+
+    const prediction = await runPlantDiseaseInference(imagePath);
+    return res.json({
+      success: true,
+      message: 'Prediction generated successfully',
+      prediction
+    });
+  } catch (error) {
+    console.error('Plant disease prediction error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to run plant disease prediction.',
+      details: error.message
+    });
+  } finally {
+    fs.unlink(imagePath, () => {});
+  }
+});
+
 
 // Get plants by nursery owner or all plants for admin
 app.get('/api/plants/my', authenticateToken, requireRole(['admin', 'nursery']), async (req, res) => {
   try {
-    const query = req.user.role === 'nursery' 
-      ? { nurseryId: req.user.userId }
-      : {}; // Admin can see all plants
+    const query = {};
       
     const plants = await Plant.find(query)
       .populate('nurseryId', 'name email')
@@ -892,9 +1017,7 @@ app.put('/api/plants/:id', authenticateToken, requireRole(['admin', 'nursery']),
     
     // Check if plant exists and user has permission
     let query = { _id: plantId };
-    if (req.user.role === 'nursery') {
-      query.nurseryId = req.user.userId; // Nursery can only update their own plants
-    }
+    // allow all
     
     const plant = await Plant.findOne(query);
     if (!plant) {
@@ -993,7 +1116,57 @@ app.patch('/api/plants/:id/toggle-status', authenticateToken, requireRole(['admi
     res.status(500).json({ error: 'Failed to toggle plant status' });
   }
 });
+// ==================== INVENTORY ROUTES ====================
 
+// Get inventory (nursery/admin)
+app.get('/api/inventory', authenticateToken, requireRole(['admin', 'nursery']), async (req, res) => {
+  try {
+    const query = req.user.role === 'nursery' 
+      ? { nurseryId: req.user.userId }
+      : {};
+    
+    const plants = await Plant.find(query).sort({ createdAt: -1 });
+    res.json(plants);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+
+// Add plant to inventory
+app.post('/api/inventory/add', authenticateToken, requireRole(['admin', 'nursery']), upload.single('image'), async (req, res) => {
+  try {
+    const plantData = {
+      ...req.body,
+      nurseryId: req.user.role === 'nursery' ? req.user.userId : null,
+      isActive: false
+    };
+    
+    if (req.file) {
+      plantData.image = `/uploads/${req.file.filename}`;
+    }
+    
+    const plant = new Plant(plantData);
+    await plant.save();
+    
+    res.status(201).json({ success: true, plant });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to add to inventory' });
+  }
+});
+// ==================== STRIPE ====================
+const stripe = require('stripe')('sk_test_51TUNoZRwOW3ZdG7HZlXJouGrez6t5EWZAFFEmi40G5UqWgCCq8I5pc3az5PgPsnHmRtBFB26Ww0sv8ny3rVEcBi3009749ORRg');
+app.post('/api/orders/create-payment-intent', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency: 'usd',
+    });
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // ==================== ORDER ROUTES ====================
 
 // Create order
@@ -1725,8 +1898,11 @@ app.patch('/api/notifications/:id/read', authenticateToken, async (req, res) => 
 // Public: list drives (upcoming first) - only approved drives
 app.get('/api/drives', async (req, res) => {
   try {
-    const { q, from, to } = req.query;
-    const query = { isPublic: true, status: 'approved' };
+    const { q, from, to, status } = req.query;  // ADD status param
+    const query = { 
+      isPublic: true, 
+      status: status || 'approved'  // Filter by status from query
+    };
     if (q) {
       query.$or = [
         { title: { $regex: q, $options: 'i' } },
@@ -1766,28 +1942,70 @@ app.get('/api/drives/:id', async (req, res) => {
 // Authenticated: create drive (users or nursery/admin)
 app.post('/api/drives', authenticateToken, async (req, res) => {
   try {
-    const { title, description, date, location, capacity, isPublic } = req.body;
+    const { title, description, date, location, coordinates, capacity, maxParticipants } = req.body;
     if (!title || !date || !location) {
       return res.status(400).json({ error: 'Title, date, and location are required' });
     }
+    
     const drive = new Drive({
       title: title.trim(),
       description: description?.trim(),
       date: new Date(date),
       location: location.trim(),
-      capacity: capacity ? Number(capacity) : 100,
-      isPublic: isPublic !== false,
+      coordinates: coordinates || { lat: 33.6844, lng: 73.0479 },
+      capacity: capacity || maxParticipants || 100,
+      maxParticipants: maxParticipants || capacity || 100,
+      isPublic: false,
+      status: 'pending',  // USER DRIVES START AS PENDING
       createdBy: req.user.userId,
       participants: []
     });
+    
     await drive.save();
-    res.status(201).json({ success: true, message: 'Drive created', drive });
+    
+    // Notify admins
+    try {
+      const admins = await User.find({ role: 'admin', isActive: true }).select('_id');
+      if (admins.length > 0) {
+        const notifs = admins.map(a => ({
+          userId: a._id,
+          title: 'New Drive Submission',
+          message: `${req.user.name} submitted: "${drive.title}"`,
+          type: 'drive',
+          link: '/admin/drives/verification'
+        }));
+        await Notification.insertMany(notifs);
+      }
+    } catch (e) {
+      console.error('Notification error:', e.message);
+    }
+    
+    res.status(201).json({ success: true, message: 'Drive submitted for approval', drive });
   } catch (error) {
     console.error('Error creating drive:', error);
     res.status(500).json({ error: 'Failed to create drive' });
   }
 });
-
+    
+// Public: drives stats
+app.get('/api/drives/stats', authenticateToken, async (req, res) => {
+  try {
+    const drives = await Drive.find({ status: 'approved', isPublic: true });
+    const totalParticipants = drives.reduce((s, d) => s + d.participants.length, 0);
+    const totalTrees = drives.reduce((s, d) => s + (d.treesToPlant || 0), 0);
+    const joinedByUser = drives.filter(d =>
+      d.participants.some(p => p.toString() === req.user.userId.toString())
+    ).length;
+    res.json({
+      activeDrives: drives.filter(d => ['upcoming', 'ongoing'].includes(d.status)).length,
+      totalParticipants,
+      totalTrees,
+      joinedByUser
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
 // Authenticated: join drive
 app.post('/api/drives/:id/join', authenticateToken, async (req, res) => {
   try {
@@ -1853,19 +2071,44 @@ app.get('/api/admin/drives', authenticateToken, requireRole(['admin']), async (r
 // Admin: create drive
 app.post('/api/admin/drives', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    const { title, description, date, location, capacity, isPublic } = req.body;
+    const { 
+      title, 
+      description, 
+      date, 
+      time,
+      location, 
+      coordinates, 
+      capacity, 
+      maxParticipants,
+      treesToPlant,
+      requirements,
+      contactInfo,
+      organizer,
+      organizerType,
+      isPublic 
+    } = req.body;
+    
     if (!title || !date || !location) {
       return res.status(400).json({ error: 'Title, date, and location are required' });
     }
+    
     const drive = new Drive({
       title: title.trim(),
       description: description?.trim(),
       date: new Date(date),
+      time: time?.trim(),
       location: location.trim(),
-      capacity: capacity ? Number(capacity) : 100,
+      coordinates: coordinates || { lat: 33.6844, lng: 73.0479 },
+      capacity: capacity ? Number(capacity) : maxParticipants ? Number(maxParticipants) : 100,
+      maxParticipants: maxParticipants ? Number(maxParticipants) : capacity ? Number(capacity) : 100,
+      treesToPlant: treesToPlant ? Number(treesToPlant) : 0,
+      requirements: requirements?.trim(),
+      contactInfo: contactInfo?.trim(),
       isPublic: isPublic !== false,
+      status: 'approved',
       createdBy: req.user.userId
     });
+    
     await drive.save();
     // Create notifications for all users when a public drive is created
     try {
@@ -1902,6 +2145,23 @@ app.put('/api/admin/drives/:id', authenticateToken, requireRole(['admin']), asyn
   } catch (error) {
     console.error('Admin update drive error:', error);
     res.status(500).json({ error: 'Failed to update drive' });
+  }
+});
+
+// Admin: update drive status
+app.put('/api/admin/drives/:id/status', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const drive = await Drive.findByIdAndUpdate(
+      req.params.id,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+    if (!drive) return res.status(404).json({ error: 'Drive not found' });
+    res.json({ success: true, drive });
+  } catch (error) {
+    console.error('Admin update drive status error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1981,7 +2241,6 @@ app.get('/api/admin/drives/:id/participants', authenticateToken, requireRole(['a
     res.status(500).json({ error: 'Failed to fetch participants' });
   }
 });
-
 // ==================== USER DRIVE CREATION ROUTES ====================
 
 // User: create drive (starts as pending)
@@ -2236,7 +2495,7 @@ app.post('/api/test-email', async (req, res) => {
   }
 });
 
-// Global error handler
+// multer file uploads
 app.use((error, req, res, next) => {
   console.error('❌ Global error:', error);
   
@@ -2308,12 +2567,13 @@ process.on('SIGINT', async () => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with automatic port fallback
+const startServer = (portToTry) => {
+  const server = app.listen(portToTry, () => {
   console.log('🚀 =================================');
   console.log(`🌱 Plantify API Server Started`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`📍 Port: ${portToTry}`);
+  console.log(`🔗 Health Check: http://localhost:${portToTry}/api/health`);
   console.log(`📧 Email Service: ${process.env.EMAIL_USER ? 'Configured' : 'Not Configured'}`);
   console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
   console.log(`🛡️  JWT Secret: ${JWT_SECRET ? 'Configured' : 'Using Default'}`);
@@ -2370,4 +2630,20 @@ app.listen(PORT, () => {
   console.log('      (admin) GET    /api/admin/drives/:id/participants');
   
   console.log('\n✨ Ready to serve requests!');
-});
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      const nextPort = Number(portToTry) + 1;
+      console.warn(`⚠️ Port ${portToTry} is already in use. Retrying on ${nextPort}...`);
+      setTimeout(() => startServer(nextPort), 300);
+      return;
+    }
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  });
+};
+
+startServer(Number(PORT));
+
+

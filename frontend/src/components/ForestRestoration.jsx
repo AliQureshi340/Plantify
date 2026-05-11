@@ -16,34 +16,7 @@ export default function PlantifyPlatform() {
 
   return (
     <div className="bg-gradient-to-br from-gray-50 via-green-50 to-emerald-50">
-      {/* Header */}
-      <header className="relative z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-                <Leaf className="text-white w-6 h-6" />
-              </div>
-              <span className="text-gray-800 font-bold text-xl bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">PLANTIFY</span>
-            </div>
-            
-            {/* Navigation */}
-            <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-600 hover:text-green-600 transition-all duration-300 font-medium hover:scale-105 hover:-translate-y-0.5">How it Works</a>
-              <a href="#" className="text-gray-600 hover:text-green-600 transition-all duration-300 font-medium hover:scale-105 hover:-translate-y-0.5">Plant Care</a>
-              <a href="#" className="text-gray-600 hover:text-green-600 transition-all duration-300 font-medium hover:scale-105 hover:-translate-y-0.5">Community</a>
-            </nav>
-            
-            {/* Actions */}
-            <div className="flex items-center space-x-4">
-              
-              
-              
-            </div>
-          </div>
-        </div>
-      </header>
+
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center">

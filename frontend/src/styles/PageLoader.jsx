@@ -40,9 +40,9 @@ const PageLoader = ({ onComplete }) => {
       <div className="relative z-10 text-center">
         {/* Logo/Icon */}
         <div className="mb-8">
-          <div className="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center animate-pulse">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-spin"></div>
-          </div>
+         <div className="w-20 h-20 mx-auto flex items-center justify-center animate-pulse">
+  <img src="https://img.icons8.com/?size=100&id=4Xem_S1LR0kT&format=png&color=40C057" width="80" height="80" />
+</div>
         </div>
 
         {/* Loading Text */}

@@ -5,24 +5,30 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "concurrently \"nodemon server.js\" \"nodemon server2.js\"",
+    "dev:main": "nodemon server.js",
+    "dev:sponsorship": "nodemon server2.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "axios": "^1.5.0",
+    "axios": "^1.16.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.21.2",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
+    "leaflet": "^1.9.4",
     "mongoose": "^7.8.7",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.1",
+    "react-leaflet": "^5.0.0",
     "sharp": "^0.32.5",
+    "stripe": "^22.1.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "nodemon": "^3.0.1"
   },
   "keywords": [

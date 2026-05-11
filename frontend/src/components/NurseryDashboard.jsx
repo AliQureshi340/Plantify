@@ -79,7 +79,7 @@ const NurseryDashboard = () => {
 
   const fetchPlants = async () => {
     try {
-      const response = await fetch('http://localhost:5002/api/plants');
+      const response = await fetch('http://localhost:5000/api/plants');
       const data = await response.json();
       setPlants(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -282,8 +282,7 @@ const NurseryDashboard = () => {
                   <div key={order._id} className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-semibold text-gray-800">#{order._id.slice(-6)}</p>
-                        <p className="text-sm text-gray-600">
+<p className="font-semibold text-gray-800">#{order.orderNumber}</p>                        <p className="text-sm text-gray-600">
                           {order.customerName || order.shippingAddress?.fullName || 'N/A'} • Rs {order.total.toLocaleString()}
                         </p>
                         <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold
@@ -505,8 +504,7 @@ const NurseryDashboard = () => {
                   <tr key={order._id} className="hover:bg-green-50 transition-colors duration-200">
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-semibold text-gray-800 text-lg">#{order._id.slice(-6)}</p>
-                        <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
+<p className="font-semibold text-gray-800 text-lg">#{order.orderNumber}</p>                        <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -572,7 +570,7 @@ const NurseryDashboard = () => {
       <div className={`fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300 ${modalTransition ? 'opacity-0' : 'opacity-100'}`}>
         <div className={`bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${modalTransition ? 'scale-95 translate-y-4 opacity-0' : 'scale-100 translate-y-0 opacity-100'}`}>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Order Details #{selectedOrder._id.slice(-6)}</h2>
+<h2 className="text-2xl font-bold text-gray-800">Order Details #{selectedOrder.orderNumber}</h2>
             <button 
               onClick={() => closeOrderModal()}
               className="text-gray-500 hover:text-gray-700 text-3xl font-bold transition-colors duration-200"
@@ -742,6 +740,7 @@ const NurseryDashboard = () => {
                 { key: 'dashboard', icon: <FcStatistics />, label: ' Dashboard' },
   { key: 'plants', icon: <FcDepartment />, label: 'Plant Inventory' },
   { key: 'orders', icon: <FcShop />, label: 'Plant Orders' },
+  { key: 'shop-orders', icon: <FcTodoList />, label: 'Shop Orders' },
               ].map(item => (
                 <div
                   key={item.key}
@@ -763,6 +762,7 @@ const NurseryDashboard = () => {
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'plants' && renderPlants()}
           {activeTab === 'orders' && renderOrders()}
+          {activeTab === 'shop-orders' && <ShopOrdersManagement />}
         </div>
 
         <AddPlantModal 
