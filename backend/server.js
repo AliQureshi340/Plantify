@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -600,45 +601,19 @@ app.post('/api/auth/send-otp', async (req, res) => {
     const roleTitle = role === 'nursery' ? 'Nursery Owner' : role === 'admin' ? 'Administrator' : 'User';
     const roleEmoji = role === 'nursery' ? '🌿' : role === 'admin' ? '👑' : '🌱';
 
-    if (transporter) {
-      const mailOptions = {
-        from: {
-          name: 'Plantify Authentication',
-          address: process.env.EMAIL_USER
-        },
-        to: email,
-        subject: `Plantify Login OTP - ${roleTitle} Portal`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>${roleEmoji} Plantify - ${roleTitle} Portal</h2>
-            <p>Your OTP code is: <strong>${otp}</strong></p>
-            <p>This code expires in 5 minutes.</p>
-            <p>If you didn't request this login, please ignore this email.</p>
-          </div>
-        `,
-        text: `Plantify ${roleTitle} Portal - Your OTP code is: ${otp}. This code expires in 5 minutes.`
-      };
-
 await sgMail.send({
-  to: email,
-  from: process.env.EMAIL_USER,
-  subject: `Plantify Login OTP - ${roleTitle} Portal`,
-  html: `<p>Your OTP: <strong>${otp}</strong>. Expires in 5 minutes.</p>`
-});
-    } else if (process.env.NODE_ENV === 'production') {
-      return res.status(503).json({
-        error: 'Email service is not configured. Please contact support.'
-      });
-    }
+      to: email,
+      from: process.env.EMAIL_USER,
+      subject: `Plantify Login OTP - ${roleTitle} Portal`,
+      html: `<p>Your OTP: <strong>${otp}</strong>. Expires in 5 minutes.</p>`
+    });
     
     console.log(`📧 OTP sent to ${email} for ${role} role: ${otp}`);
     
     const isDevLike = process.env.NODE_ENV !== 'production';
     res.json({ 
       success: true,
-      message: transporter
-        ? 'OTP sent successfully to your email'
-        : 'OTP generated successfully. Email service is disabled in local mode; use server logs.',
+      message: 'OTP sent successfully to your email',
       email: email.replace(/(.{2}).*(@.*)/, '$1***$2'),
       expiresIn: 300,
       ...(isDevLike && !transporter ? { devOtp: otp } : {})
@@ -2461,9 +2436,9 @@ app.get('/api/admin/drives/verification', authenticateToken, requireRole(['admin
 // Test email endpoint (for debugging)
 app.post('/api/test-email', async (req, res) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      return res.status(400).json({ error: 'Email configuration not found' });
-    }
+   if (!process.env.EMAIL_USER || !process.env.SENDGRID_API_KEY) {
+  return res.status(400).json({ error: 'Email configuration not found' });
+}
     
     const { to } = req.body;
     if (!to) {
@@ -2488,7 +2463,12 @@ app.post('/api/test-email', async (req, res) => {
       text: `Plantify Email Test - This is a test email from Plantify API server. Timestamp: ${new Date().toISOString()}`
     };
     
-    await transporter.sendMail(mailOptions);
+   await sgMail.send({
+  to: to,
+  from: process.env.EMAIL_USER,
+  subject: 'Plantify Email Test',
+  html: mailOptions.html
+});
     
     res.json({
       success: true,
