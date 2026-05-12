@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 require('dotenv').config();
@@ -618,7 +619,12 @@ app.post('/api/auth/send-otp', async (req, res) => {
         text: `Plantify ${roleTitle} Portal - Your OTP code is: ${otp}. This code expires in 5 minutes.`
       };
 
-      await transporter.sendMail(mailOptions);
+await sgMail.send({
+  to: email,
+  from: process.env.EMAIL_USER,
+  subject: `Plantify Login OTP - ${roleTitle} Portal`,
+  html: `<p>Your OTP: <strong>${otp}</strong>. Expires in 5 minutes.</p>`
+});
     } else if (process.env.NODE_ENV === 'production') {
       return res.status(503).json({
         error: 'Email service is not configured. Please contact support.'
